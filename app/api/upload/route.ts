@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { writeFile } from 'fs/promises';
-import { join } from 'path';
+import { join, extname } from 'path';
+import crypto from 'crypto';
+
+function generateGuid(): string {
+  return crypto.randomUUID();
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,18 +19,22 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // With the file data in the buffer, you can do whatever you want with it.
-    // For this example, we'll save it to the public/uploads directory
+    // Generate a GUID for the new filename
+    const fileExtension = extname(file.name);
+    const newFileName = `${generateGuid()}${fileExtension}`;
+
     const uploadDir = join(process.cwd(), 'public', 'uploads');
-    const path = join(uploadDir, file.name);
+    const path = join(uploadDir, newFileName);
     await writeFile(path, buffer);
 
-    const publicUrl = `/uploads/${file.name}`;
+    const publicUrl = `/uploads/${newFileName}`;
 
     return NextResponse.json({ 
       success: true, 
       message: 'File uploaded successfully',
-      url: publicUrl
+      url: publicUrl,
+      originalName: file.name,
+      newName: newFileName
     });
   } catch (error) {
     console.error('Error uploading file:', error);
